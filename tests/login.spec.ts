@@ -2,32 +2,25 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Skenario Login', () => {
 
-    // Otomatis dijalankan sebelum SETIAP test di dalam grup ini
     test.beforeEach(async ({ page }) => {
-        await page.goto('https://www.saucedemo.com/');
+        await page.goto('/');
     });
 
     test('user berhasil login', async ({ page }) => {
-        // 1. Buka halaman
-        await page.goto('https://www.saucedemo.com/');
-
-        // 2. Isi form login
         await page.getByPlaceholder('Username').fill('standard_user');
         await page.getByPlaceholder('Password').fill('secret_sauce');
         await page.getByRole('button', { name: 'Login' }).click();
 
-        // 3. Verifikasi: halaman Products muncul
-        await expect(page.getByText('Products')).toBeVisible();
+        await expect(page).toHaveURL(/inventory\.html/);
+        await expect(page.getByTestId('title')).toHaveText('Products');
     });
 
     test('user salah password', async ({ page }) => {
-        const randomPassword = crypto.randomUUID();
-
         await page.getByPlaceholder('Username').fill('standard_user');
-        await page.getByPlaceholder('Password').fill(randomPassword);
+        await page.getByPlaceholder('Password').fill('password_salah');
         await page.getByRole('button', { name: 'Login' }).click();
 
-        await expect(page.locator('[data-test="error"]')).toContainText(
+        await expect(page.getByTestId('error')).toContainText(
             'Username and password do not match any user in this service'
         );
     });
@@ -36,8 +29,16 @@ test.describe('Skenario Login', () => {
         await page.getByPlaceholder('Username').fill('standard_user');
         await page.getByRole('button', { name: 'Login' }).click();
 
-        await expect(page.locator('[data-test="error"]')).toContainText(
-            'Epic sadface: Password is required'
+        await expect(page.getByTestId('error')).toContainText('Password is required');
+    });
+
+    test('user terkunci tidak bisa login', async ({ page }) => {
+        await page.getByPlaceholder('Username').fill('locked_out_user');
+        await page.getByPlaceholder('Password').fill('secret_sauce');
+        await page.getByRole('button', { name: 'Login' }).click();
+
+        await expect(page.getByTestId('error')).toContainText(
+            'Sorry, this user has been locked out'
         );
     });
 
